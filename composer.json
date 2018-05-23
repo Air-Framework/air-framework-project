@@ -1,0 +1,23 @@
+{
+    "authors": [
+        {
+            "name": "Abderrahman Daif",
+            "email": "daif.abderrahman@gmail.com"
+        },
+        {
+            "name": "Lionel Tordjman",
+            "email": "lionel.tordjman@gmail.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Air\\": "core/Air"
+        }
+    },
+    "require": {
+        "twig/twig": "^1.31",
+        "guzzlehttp/guzzle": "^6.2",
+        "symfony/yaml": "^3.2",
+        "symfony/var-dumper": "^3.2"
+    }
+}

@@ -1,0 +1,5 @@
+routes:
+  'maroute':
+    'pattern': '/route/{param1}/rrgaattrrr/{param2}'
+    'controller': '\App\Controller\AjaxController'
+    'method': 'rrgaattrrrAction'
