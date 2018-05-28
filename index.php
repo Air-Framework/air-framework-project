@@ -22,7 +22,12 @@ ini_set('display_errors' , 1);
 require_once("vendor/autoload.php");
 
 session_start();
-$_SESSION['locale'] = 'fr';
+$_SESSION['locale'] = 'en';
 
-$bootstrap = new Air\Bootstrap\Bootstrap('App');
-$bootstrap->init();
+/*
+    Instantiate the bootstrap (Router) with your own namespace depending on your file structure
+    i.e. namespace App stands for App folder on base dir
+*/
+//$bootstrap = new Air\Bootstrap\Bootstrap('src\App');
+//$bootstrap = new Air\Bootstrap\Bootstrap('Microservice');
+$bootstrap = new Air\Bootstrap\Bootstrap('AppNamespace');

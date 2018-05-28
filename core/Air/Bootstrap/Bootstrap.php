@@ -77,6 +77,7 @@ class Bootstrap
             $this->setControllerAndMethod();
             $this->setParams();
         }
+        $this->init();
     }
 
     /**
@@ -84,7 +85,7 @@ class Bootstrap
      *
      * @return void
      */
-    public function parseUri()
+    protected function parseUri()
     {
         $this->uri   = explode('?', $_SERVER['REQUEST_URI']);
         self::$route = explode('/', $this->uri[0]);
@@ -98,7 +99,7 @@ class Bootstrap
      *     *
      * @return array|boolean
      */
-    public function getRouteFromRouter($routes, $uri)
+    protected function getRouteFromRouter($routes, $uri)
     {
         foreach($routes as $route) {
 
@@ -132,7 +133,7 @@ class Bootstrap
      *
      * @return void
      */
-    public function init()
+    protected function init()
     {
         if ($this->method) {
             call_user_func_array([new $this->controller(), $this->method], $this->params);
@@ -146,7 +147,7 @@ class Bootstrap
      *
      * @return void
      */
-    public function setControllerAndMethod()
+    protected function setControllerAndMethod()
     {
         $controllerFile = $_SERVER['DOCUMENT_ROOT'].'/'.$this->controllerPath.ucfirst(self::$route[1]).'Controller.php';
 
@@ -161,7 +162,7 @@ class Bootstrap
         $this->checkMethod();
     }
 
-    public static function decodeUrlPath($urlPath, $type = 'lower') {
+    protected static function decodeUrlPath($urlPath, $type = 'lower') {
         $urlPath = strtolower($urlPath);
         preg_match_all('/(-.{1})/', $urlPath, $matches);
         if(count($matches[0]))
@@ -178,7 +179,7 @@ class Bootstrap
      *
      * @return void
      */
-    public function checkMethod()
+    protected function checkMethod()
     {
         $reflectionClass = new \ReflectionClass($this->controller);
         $this->method    = $reflectionClass->hasMethod($this->method) ? $this->method : false;
@@ -189,7 +190,7 @@ class Bootstrap
      *
      * @return void
      */
-    public function setParams()
+    protected function setParams()
     {
         if ($this->method) {
             $reflectionMethod = new \ReflectionMethod($this->controller, $this->method);
@@ -205,7 +206,7 @@ class Bootstrap
     /**
      * @param $className
      */
-    public static function autoload($className)
+    protected static function autoload($className)
     {
         include str_replace('\\', DIRECTORY_SEPARATOR, $className).".php";
     }

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Controller;
+namespace AppNamespace\Controller;
 
 use Air\Controller\BaseController;
 use Air\Bootstrap\Bootstrap;

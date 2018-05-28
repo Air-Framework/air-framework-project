@@ -14,12 +14,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>. *
 
-<IfModule mod_rewrite.c>
-    # enable Rewite module
-    RewriteEngine On
-    # Serve file if exists
-    RewriteCond %{REQUEST_FILENAME} -f
-    RewriteRule .? - [L]
-    # Rewrite other requests to index.php
-    RewriteRule .? %{ENV:BASE}/index.php [L]
-</IfModule>
+# enable Rewite module
+RewriteEngine On
+
+# Remove unwanted directories
+RewriteRule ^vendor/(.*)?$ / [R=301,L]
+RewriteRule ^AppNamespace/(.*)?$ / [R=301,L]
+
+# Serve file if exists
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule .? - [L]
+# Rewrite other requests to index.php
+RewriteRule .? %{ENV:BASE}/index.php [L]
