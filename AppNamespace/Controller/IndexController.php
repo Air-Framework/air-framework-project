@@ -3,40 +3,26 @@
 namespace AppNamespace\Controller;
 
 use Air\Controller\BaseController;
-use Air\Bootstrap\Bootstrap;
 
 class IndexController extends BaseController
 {
 	/**
-	 * route = /lang/{locale}
-	 * @param $route
+	 * By default called on base url
 	 */
-    public function langAction($route)
-	{
-		$_SESSION['locale'] = $route[2];
-
-		if($_SERVER["HTTP_REFERER"]) {
-			$this->redirectTo($_SERVER["HTTP_REFERER"]);
-		}
-
-		$this->redirectTo('/result');
-	}
-
-	/**
-	 * This is the first showed screen
-	 * @param $route
-	 */
-	public function indexAction($route)
+	public function indexAction()
 	{
 		$this->render( 'index.html.twig', array('hello' => 'world'));
 	}
 
 	/**
-	 * This is the first showed screen
+	 * Route with params
+     * Without router file (routes.yml) called like this :
+     * http(s)://base_url/index/param/{hello}/{world}
+     *
 	 * @param string $hello
 	 * @param string $world
 	 */
-	public function paramAction($hello = '', $world = '', $hi)
+	public function paramAction($hello = '', $world = '')
 	{
 		$this->render( 'index.html.twig', array('hello' => $hello, 'world' => $world));
 	}

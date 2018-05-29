@@ -1,5 +1,0 @@
-routes:
-  'my_first_route':
-    'pattern': '/route/{param1}/first/{param2}'
-    'controller': '\AppNamespace\Controller\AjaxController'
-    'method': 'myFirstRouteAction'
