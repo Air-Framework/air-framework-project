@@ -21,6 +21,8 @@ ini_set('display_errors' , 1);
 
 require_once("vendor/autoload.php");
 
+use Air\Bootstrap\Bootstrap;
+
 session_start();
 $_SESSION['locale'] = 'en';
 
@@ -30,4 +32,9 @@ $_SESSION['locale'] = 'en';
 */
 //$bootstrap = new Air\Bootstrap\Bootstrap('src\App');
 //$bootstrap = new Air\Bootstrap\Bootstrap('Microservice');
-$bootstrap = new Air\Bootstrap\Bootstrap('AppNamespace');
+$viewsPath = $_SERVER['DOCUMENT_ROOT'].'/Resources/views';
+try {
+    $bootstrap = Bootstrap::getInstance('AppNamespace', $viewsPath);
+} catch (Exception $e) {
+    echo $e->getMessage();
+}
