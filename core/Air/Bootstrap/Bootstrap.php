@@ -20,33 +20,37 @@
 namespace Air\Bootstrap;
 
 use Air\Helper\ParameterHelper;
+use Air\Controller\BaseController;
 
 class Bootstrap
 {
 
     /** @var array */
-    private $_uri;
+    protected $uri;
 
     /** @var array */
     public static $route;
 
     /** @var object Controller */
-    private $_controller;
+    protected $controller;
 
     /** @var string */
-    private $_controllerClass = '';
+    protected $controllerClass;
 
     /** @var string */
-    private $_controllerPath = '';
+    protected $controllerPath;
 
     /** @var string */
-    private $_controllerNamespace = '';
+    protected $controllerNamespace;
 
     /** @var string */
-    private $_method = 'IndexAction';
+    protected $method;
+
+    /** @var string */
+    protected $defaultMethod;
 
     /** @var array */
-    private $_params = [];
+    protected $params = [];
 
     /**
      * BootstrapController constructor.
@@ -64,20 +68,35 @@ class Bootstrap
         $foundRoute = false;
         $routes = ParameterHelper::getParam('config/routes', 'routes');
         if ($routes) {
-            $foundRoute = $this->getRouteFromRouter($routes, $this->_uri[0]);
-            $this->_controller = $foundRoute['controller'];
-            $this->_method=  $foundRoute['method'];
-            $this->_params = $foundRoute['params'];
+            $foundRoute = $this->getRouteFromRouter($routes, $this->uri[0]);
+            $this->setController($foundRoute['controller']);
+            $this->setMethod($foundRoute['method']);
+            $this->params = isset($foundRoute['params']) ? $foundRoute['params'] : [];
         }
 
         if (!$foundRoute) {
-            $this->_controllerNamespace = '\\'.$nameSpace.'\Controller\\';
-            $this->_controllerPath = $nameSpace.'/Controller/'.ucfirst(self::$route[1]).'Controller.php';
-            $this->_controllerClass = $this->_controllerNamespace.'IndexController';
+            $this->controllerNamespace = '\\'.$nameSpace.'\Controller\\';
+            $this->controllerPath = $nameSpace.'/Controller/'.ucfirst(self::$route[1]).'Controller.php';
+            $this->controllerClass = $this->controllerNamespace.'IndexController';
             $this->setControllerAndMethod();
             $this->setParams();
         }
         $this->init();
+    }
+
+
+    /**
+     * Instantiate controller and call its method
+     *
+     * @return void
+     */
+    protected function init()
+    {
+        if ($this->method) {
+            call_user_func_array([new $this->controller(), $this->method], $this->params);
+        } else {
+            BaseController::notFoundAction();
+        }
     }
 
     /**
@@ -87,8 +106,8 @@ class Bootstrap
      */
     protected function parseUri()
     {
-        $this->_uri   = explode('?', $_SERVER['REQUEST_URI']);
-        self::$route = explode('/', $this->_uri[0]);
+        $this->uri   = explode('?', $_SERVER['REQUEST_URI']);
+        self::$route = explode('/', $this->uri[0]);
     }
 
     /**
@@ -101,45 +120,37 @@ class Bootstrap
      */
     protected function getRouteFromRouter($routes, $uri)
     {
+        /* Remove last slash from uri excluding base url */
+        if ($uri !== '/' && $uri[strlen($uri) - 1] === '/')
+            $uri = substr($uri, 0, strlen($uri) - 1);
+
         foreach($routes as $route) {
-
-            /* build pattern ad get params at the same time */
-            preg_match_all('#\{[^\}]+\}#', $route['pattern'], $matches);
-            $pattern = '#'.$route['pattern'].'/?#';
-            foreach ($matches[0] as $match) {
-                $pattern = str_replace($match, '(.+)', $pattern);
-                $params[str_replace('}','',str_replace('{','', $match))] = [];
-            }
-
-            /* compare pattern with uri */
-            if (preg_match($pattern, $uri, $matches)) {
-                unset($matches[0]);
-                $i = 1;
-                /* assign uri params to route params */
-                foreach ($params as $key => $param) {
-                    $params[$key] = $matches[$i];
-                    $i++;
+            /* count all uri parts to fit with route parts */
+            if( count(explode('/', $route['pattern'])) == count(explode('/', $uri)) ) {
+                /* build pattern ad get params at the same time */
+                preg_match_all('#\{[^\}]+\}#', $route['pattern'], $matches);
+                $pattern = '#^'.$route['pattern'].'/?$#';
+                foreach ($matches[0] as $match) {
+                    $pattern = str_replace($match, '([^/]+)', $pattern);
+                    $params[str_replace('}','',str_replace('{','', $match))] = [];
                 }
-                $route['params'] = $params;
-
-                return $route;
+                /* compare pattern with uri */
+                if (preg_match($pattern, $uri, $matches)) {
+                    unset($matches[0]);
+                    $i = 1;
+                    /* assign uri params to route params */
+                    if (isset($params)) {
+                        foreach ($params as $key => $param) {
+                            $params[$key] = $matches[$i];
+                            $i++;
+                        }
+                        $route['params'] = $params;
+                    }
+                    return $route;
+                }
             }
         }
         return false;
-    }
-
-    /**
-     * Instantiate controller and call its method
-     *
-     * @return void
-     */
-    protected function init()
-    {
-        if ($this->_method) {
-            call_user_func_array([new $this->_controller(), $this->_method], $this->_params);
-        } else {
-            die('404');
-        }
     }
 
     /**
@@ -149,17 +160,38 @@ class Bootstrap
      */
     protected function setControllerAndMethod()
     {
-        $controllerFile = $_SERVER['DOCUMENT_ROOT'].'/'.$this->_controllerPath;
-
-        if (file_exists($controllerFile)) {
-            $this->_controllerClass = $this->_controllerNamespace.self::decodeUrlPath(self::$route[1], 'upper').'Controller';
-            $this->_method          = isset(self::$route[2]) ? self::decodeUrlPath(self::$route[2]).'Action' : $this->_method;
+        if ($this->isControllerFileExists()) {
+            $this->controllerClass = $this->controllerNamespace.self::decodeUrlPath(self::$route[1], 'upper').'Controller';
+            $tmpMethod = isset(self::$route[2]) ? self::decodeUrlPath(self::$route[2]).'Action' : $this->defaultMethod;
         } else {
-            $this->_method = self::$route[1] != '' ? self::decodeUrlPath(self::$route[1]).'Action' : $this->_method;
+            $tmpMethod = self::$route[1] != '' ? self::decodeUrlPath(self::$route[1]).'Action' : $this->defaultMethod;
         }
-        $this->_controller = new $this->_controllerClass();
+        /* Set Controller Full Class Name */
+        $this->setController($this->controllerClass);
+        /* Set Controller method */
+        $this->setMethod($tmpMethod);
+    }
 
-        $this->checkMethod();
+    /**
+     * @param $controllerClass string
+     * @return void
+     */
+    protected function setController($controllerClass)
+    {
+        $this->controller = class_exists($controllerClass) ? $controllerClass : null;
+    }
+
+    /**
+     * @param $method string
+     * @return void
+     */
+    protected function setMethod($method)
+    {
+        try {
+            $this->method = $this->isMethodExists($method) ? $method : null;
+        } catch (\ReflectionException $e) {
+            echo $e->getMessage();
+        }
     }
 
     protected static function decodeUrlPath($urlPath, $type = 'lower') {
@@ -175,38 +207,52 @@ class Bootstrap
     }
 
     /**
+     * Verify that parsed Controller File
+     *
+     * @return boolean
+     */
+    protected function isControllerFileExists()
+    {
+        $controllerFile = $_SERVER['DOCUMENT_ROOT'].'/'.$this->controllerPath;
+        return file_exists($controllerFile);
+    }
+
+    /**
      * Verify that parsed method is valid
      *
-     * @return void
+     * @var string $method
+     *
+     * @throws \ReflectionException
+     * @return boolean
      */
-    protected function checkMethod()
+    protected function isMethodExists($method)
     {
-        $reflectionClass = new \ReflectionClass($this->_controller);
-        $this->_method    = $reflectionClass->hasMethod($this->_method) ? $this->_method : false;
+        $reflectionClass = new \ReflectionClass($this->controller);
+        return $reflectionClass->hasMethod($method);
     }
 
     /**
      * Prepare an array of parameter to feed called method
      *
+     * @throws \ReflectionException
      * @return void
      */
     protected function setParams()
     {
-        if ($this->_method) {
+        if ($this->method) {
 
-            $reflectionMethod = new \ReflectionMethod($this->_controller, $this->_method);
-            $isIndexController = $this->_controllerNamespace.'IndexController' === $this->_controllerClass;
+            $reflectionMethod = new \ReflectionMethod($this->controller, $this->method);
+            $isIndexController = $this->controllerNamespace.'IndexController' === $this->controllerClass;
 
-
+            /* Check if the url is shortened because it belong to IndexController to give appropriate params */
             $i = 1;
-            /* Check if the url is shortened because it belong to IndexController */
             if (isset(self::$route[1]) && isset(self::$route[2]) && $isIndexController
                 && self::$route[1] !== 'index' && self::$route[2] !== 'index') {
                 $i -= 1;
             }
 
             foreach ($reflectionMethod->getParameters() as $param) {
-                $this->_params[$param->getName()] = isset(self::$route[$i + 2]) ? self::$route[$i + 2] : null;
+                $this->params[$param->getName()] = isset(self::$route[$i + 2]) ? self::$route[$i + 2] : null;
                 $i++;
             }
         }

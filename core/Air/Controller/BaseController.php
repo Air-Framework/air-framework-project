@@ -59,4 +59,9 @@ class BaseController
         $this->twig = new \Twig_Environment($loader);
     }
 
+    public static function notFoundAction ()
+    {
+        die('404');
+    }
+
 }
