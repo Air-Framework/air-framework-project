@@ -22,7 +22,7 @@ class ATwigExtension extends \Twig_Extension
 	public function getFilters() {
 		return [
 			new \Twig_SimpleFilter(
-				'trans', array($this, 'trans')
+				'trans', [$this, 'trans']
 			)
 		];
 	}

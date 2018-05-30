@@ -15,14 +15,25 @@
 
 namespace Air\Controller;
 
+use Air\Bootstrap\Bootstrap;
 use Air\Helper\TranslationHelper;
 use Air\Extensions\ATwigExtension;
 
 
 class BaseController
 {
-
+    /* @var \Twig_Environment $twig */
     protected $twig;
+    
+    /* @var Bootstrap $bootstrap */
+    protected $bootstrap;
+
+    public function __construct(Bootstrap $bootstrap = null)
+    {
+        $this->bootstrap = $bootstrap;
+        $loader = new \Twig_Loader_Filesystem($bootstrap->viewsPath);
+        $this->twig = new \Twig_Environment($loader);
+    }
 
     public function render($template, $aTwigVars = [])
     {
@@ -47,12 +58,6 @@ class BaseController
     {
         header("Location: $route");
         exit(0);
-    }
-
-    public function __construct()
-    {
-        $loader     = new \Twig_Loader_Filesystem($_SERVER['DOCUMENT_ROOT'].'/Resources/views');
-        $this->twig = new \Twig_Environment($loader);
     }
 
     public static function notFoundAction ()

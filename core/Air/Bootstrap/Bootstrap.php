@@ -21,11 +21,17 @@ use Air\Controller\BaseController;
 class Bootstrap
 {
 
+    /** @var array  */
+    private static $instances = [];
+
     /** @var array */
     protected $uri;
 
     /** @var array */
     public static $route;
+
+    /** @var string */
+    public $viewsPath;
 
     /** @var object Controller */
     protected $controller;
@@ -43,7 +49,7 @@ class Bootstrap
     protected $method;
 
     /** @var string */
-    protected $defaultMethod;
+    protected $defaultMethod = 'IndexAction';
 
     /** @var array */
     protected $params = [];
@@ -52,12 +58,21 @@ class Bootstrap
      * BootstrapController constructor.
      * Dispatch Uri Parameter and call needed functions to well instantiate the controller
      * @var $nameSpace string
+     * @var $viewsPath string
+     *
      * @throws \Exception
      */
-    public function __construct($nameSpace = null)
+    private function __construct($nameSpace, $viewsPath = null)
     {
         if (!$nameSpace)
             throw new \Exception("Air\Bootstrap\Bootstrap.php : nameSpace parameter must be defined.");
+
+        $this->viewsPath = $viewsPath ?: $_SERVER['DOCUMENT_ROOT'].'/Resources/views';
+
+        if (!is_dir($viewsPath))
+            throw new \Exception("Air\Bootstrap\Bootstrap.php : views paths must be defined.
+                Folder $this->viewsPath does not exist");
+
         spl_autoload_register('self::autoload');
         $this->parseUri();
 
@@ -80,6 +95,28 @@ class Bootstrap
         $this->init();
     }
 
+    /**
+     * @param string $nameSpace
+     * @param string $viewsPath
+     *
+     * @return self
+     *
+     * @throws \Exception
+     */
+    public static function getInstance($nameSpace, $viewsPath = null) {
+
+        // Check if an instance exists with this key already
+        if(!array_key_exists($nameSpace, self::$instances)) {
+            // instance doesn't exist yet, so create it
+            self::$instances[$nameSpace] = new self($nameSpace, $viewsPath);
+        }
+
+        // Return the correct instance of this class
+        return self::$instances[$nameSpace];
+    }
+
+    private function __clone() {}
+
 
     /**
      * Instantiate controller and call its method
@@ -89,7 +126,7 @@ class Bootstrap
     protected function init()
     {
         if ($this->method) {
-            call_user_func_array([new $this->controller(), $this->method], $this->params);
+            call_user_func_array([new $this->controller($this), $this->method], $this->params);
         } else {
             BaseController::notFoundAction();
         }
