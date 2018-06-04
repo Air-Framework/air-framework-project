@@ -72,17 +72,16 @@ class Bootstrap
         if (!is_dir($viewsPath))
             throw new \Exception("Air\Bootstrap\Bootstrap.php : views paths must be defined.
                 Folder $this->viewsPath does not exist");
-
-        spl_autoload_register('self::autoload');
-        $this->parseUri();
-
+		
+		$this->parseUri();
+		
         $foundRoute = false;
         $routes = ParameterHelper::getParam('config/routes', 'routes');
         if ($routes) {
-            $foundRoute = $this->getRouteFromRouter($routes, $this->uri[0]);
+            $foundRoute = self::getRouteFromRouter($routes, $this->uri[0]);
             $this->setController($foundRoute['controller']);
             $this->setMethod($foundRoute['method']);
-            $this->params = isset($foundRoute['params']) ? $foundRoute['params'] : [];
+            $this->params = $foundRoute['params'];
         }
 
         if (!$foundRoute) {
@@ -146,12 +145,12 @@ class Bootstrap
     /**
      * Get route configuration file
      *
-     * @array $routes
-     * @string $uri
-     *     *
+     * @param array $routes routes from routing file
+     * @param String $uri
+     *
      * @return array|boolean
      */
-    protected function getRouteFromRouter($routes, $uri)
+    public static function getRouteFromRouter($routes, $uri)
     {
         /* Remove last slash from uri excluding base url */
         if ($uri !== '/' && $uri[strlen($uri) - 1] === '/')
@@ -178,7 +177,9 @@ class Bootstrap
                             $i++;
                         }
                         $route['params'] = $params;
-                    }
+                    } else {
+						$params = [];
+					}
                     return $route;
                 }
             }
@@ -289,13 +290,5 @@ class Bootstrap
                 $i++;
             }
         }
-    }
-
-    /**
-     * @param $className
-     */
-    protected static function autoload($className)
-    {
-        include str_replace('\\', DIRECTORY_SEPARATOR, $className).".php";
     }
 }
